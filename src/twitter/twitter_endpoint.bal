@@ -1,418 +1,246 @@
-//
-// Copyright (c) 2018, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
-//
-// WSO2 Inc. licenses this file to you under the Apache License,
-// Version 2.0 (the "License"); you may not use this file except
-// in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
-//
-
 import ballerina/encoding;
 import ballerina/http;
 
-# Twitter Client object.
-#
-# + accessToken - The access token of the Twitter account
-# + accessTokenSecret - The access token secret of the Twitter account
-# + clientId - The consumer key of the Twitter account
-# + clientSecret - The consumer secret of the Twitter account
-# + twitterClient - HTTP Client endpoint
+# The Twitter client object.
 public type Client client object {
 
-    string accessToken;
-    string accessTokenSecret;
-    string clientId;
-    string clientSecret;
     http:Client twitterClient;
+    TwitterCredential twitterCredential;
 
     public function __init(TwitterConfiguration twitterConfig) {
         self.twitterClient = new(TWITTER_API_URL, twitterConfig.clientConfig);
-        self.accessToken = twitterConfig.accessToken;
-        self.accessTokenSecret = twitterConfig.accessTokenSecret;
-        self.clientId = twitterConfig.clientId;
-        self.clientSecret = twitterConfig.clientSecret;
+        self.twitterCredential = {
+            accessToken: twitterConfig.accessToken,
+            accessTokenSecret: twitterConfig.accessTokenSecret,
+            consumerKey: twitterConfig.consumerKey,
+            consumerSecret: twitterConfig.consumerSecret
+        };
     }
 
-    # Update the authenticated user's current status (If you want to provide attachment, you can use
-    # mediaIds or attachmentUrl).
+    # Updates the authenticating user's current status, also known as Tweeting.
     #
     # + status - The text of status update
-    # + args - The user parameters as args
-    # + return - If success, returns Status object, else returns error.
-    public remote function tweet(string status, string... args) returns @tainted Status|error {
+    # + return - If success, returns `twitter:Status` object, else returns `error`
+    public remote function tweet(string status) returns @tainted Status|error {
+        var encodedStatus = encoding:encodeUriComponent(status, UTF_8);
+        if (encodedStatus is error) {
+            return prepareError("Error occurred while encoding the status.");
+        }
+        string urlParams = "status=" + <string>encodedStatus;
+
+        var header = generateAuthorizationHeader(self.twitterCredential, POST, UPDATE_API, urlParams);
+        if (header is error) {
+            return prepareError("Error occurred while generating authorization header.");
+        }
         http:Request request = new;
+        request.setHeader("Authorization", <string>header);
+        string requestPath = UPDATE_API + "?" + urlParams;
 
-        string mediaIds = "";
-        string attachmentUrl = "";
-
-        if (args.length() > 0) {
-            mediaIds = args[0];
-        }
-        if (args.length() > 1) {
-            attachmentUrl = args[1];
-        }
-
-        string tweetPath = UPDATE_ENDPOINT;
-        string encodedStatusValue = check encoding:encodeUriComponent(status, UTF_8);
-        string urlParams = STATUS + encodedStatusValue + "&";
-        string oauthStr = "";
-
-        if (attachmentUrl != "") {
-            string encodedAttachmentValue = check encoding:encodeUriComponent(attachmentUrl, UTF_8);
-            urlParams = urlParams + ATTACHMENT_URL + encodedAttachmentValue + "&";
-            oauthStr = ATTACHMENT_URL + encodedAttachmentValue + "&";
-        }
-
-        if (mediaIds != "") {
-            string encodedMediaValue = check encoding:encodeUriComponent(mediaIds, UTF_8);
-            urlParams = urlParams + MEDIA_IDS + encodedMediaValue + "&";
-            oauthStr = oauthStr + MEDIA_IDS + encodedMediaValue + "&";
-        }
-        oauthStr = oauthStr + constructOAuthParams(self.clientId, self.accessToken) + STATUS + encodedStatusValue + "&";
-
-        var requestHeaders = constructRequestHeaders(request, POST, tweetPath, self.clientId, self.clientSecret,
-            self.accessToken, self.accessTokenSecret, oauthStr);
-        if (requestHeaders is error) {
-            error err = error(TWITTER_ERROR_CODE,
-                              message = "Error occurred while encoding parameters when constructing request headers");
-            return err;
-        } else {
-            tweetPath = tweetPath + "?" + urlParams;
-            var httpResponse = self.twitterClient->post(tweetPath, request);
-            if (httpResponse is http:Response) {
+        var httpResponse = self.twitterClient->post(requestPath, request);
+        if (httpResponse is http:Response) {
+            var jsonPayload = httpResponse.getJsonPayload();
+            if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
-                var jsonPayload = httpResponse.getJsonPayload();
-                if (jsonPayload is json) {
-                    if (statusCode == http:STATUS_OK) {
-                        return convertToStatus(jsonPayload);
-                    } else {
-                        return setResponseError(jsonPayload);
-                    }
+                if (statusCode == http:STATUS_OK) {
+                    return convertToStatus(jsonPayload);
                 } else {
-                    error err = error(TWITTER_ERROR_CODE,
-                                      message = "Error occurred while accessing the JSON payload of the response");
-                    return err;
+                    return prepareErrorResponse(jsonPayload);
                 }
             } else {
-                error err = error(TWITTER_ERROR_CODE,
-                                  message = "Error occurred while invoking the REST API");
-                return err;
+                return prepareError("Error occurred while accessing the JSON payload of the response.");
             }
+        } else {
+            return prepareError("Error occurred while invoking the REST API.");
         }
     }
 
-    # Retweet a tweet.
+    # Retweets a tweet, specified by the id parameter. Returns the original Tweet with Retweet details embedded.
     #
     # + id - The numerical ID of the desired status
-    # + return - If success, returns Status object, else returns error.
+    # + return - If success, returns `twitter:Status` object, else returns `error`
     public remote function retweet(int id) returns @tainted Status|error {
+        string requestPath = RETWEET_API + id.toString() + ".json";
+        var header = generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
+        if (header is error) {
+            return prepareError("Error occurred while generating authorization header.");
+        }
         http:Request request = new;
-        string oauthStr = constructOAuthParams(self.clientId, self.accessToken);
+        request.setHeader("Authorization", <string>header);
 
-        string tweetPath = RETWEET_ENDPOINT + id.toString() + JSON;
-        var requestHeaders = constructRequestHeaders(request, POST, tweetPath, self.clientId, self.clientSecret,
-            self.accessToken, self.accessTokenSecret, oauthStr);
-        if (requestHeaders is error) {
-            error err = error(TWITTER_ERROR_CODE,
-                              message = "Error occurred while encoding parameters when constructing request headers");
-            return err;
-        } else {
-            var httpResponse = self.twitterClient->post(tweetPath, request);
-            if (httpResponse is http:Response) {
+        var httpResponse = self.twitterClient->post(requestPath, request);
+        if (httpResponse is http:Response) {
+            var jsonPayload = httpResponse.getJsonPayload();
+            if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
-                var jsonPayload = httpResponse.getJsonPayload();
-                if (jsonPayload is json) {
-                    if (statusCode == http:STATUS_OK) {
-                        return convertToStatus(jsonPayload);
-                    } else {
-                        return setResponseError(jsonPayload);
-                    }
+                if (statusCode == http:STATUS_OK) {
+                    return convertToStatus(jsonPayload);
                 } else {
-                    error err = error(TWITTER_ERROR_CODE,
-                                      message = "Error occurred while accessing the JSON payload of the response");
-                    return err;
+                    return prepareErrorResponse(jsonPayload);
                 }
             } else {
-                error err = error(TWITTER_ERROR_CODE, message = "Error occurred while invoking the REST API");
-                return err;
+                return prepareError("Error occurred while accessing the JSON payload of the response.");
             }
+        } else {
+            return prepareError("Error occurred while invoking the REST API.");
         }
     }
 
-    # Untweet a retweeted status.
+    # Untweets a retweeted status, specified by the id parameter.
+    # Returns the original Tweet, with Retweet details embedded.
     #
     # + id - The numerical ID of the desired status
-    # + return - If success, returns Status object, else returns error.
+    # + return - If success, returns `twitter:Status` object, else returns `error`
     public remote function unretweet(int id) returns @tainted Status|error {
+        string requestPath = UN_RETWEET_API + id.toString() + ".json";
+        var header = generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
+        if (header is error) {
+            return prepareError("Error occurred while generating authorization header.");
+        }
         http:Request request = new;
-        string oauthStr = constructOAuthParams(self.clientId, self.accessToken);
+        request.setHeader("Authorization", <string>header);
 
-        string tweetPath = UN_RETWEET_ENDPOINT + id.toString() + JSON;
-        var requestHeaders = constructRequestHeaders(request, POST, tweetPath, self.clientId, self.clientSecret,
-            self.accessToken, self.accessTokenSecret, oauthStr);
-        if (requestHeaders is error) {
-            error err = error(TWITTER_ERROR_CODE,
-                              message = "Error occurred while encoding parameters when constructing request headers");
-            return err;
-        } else {
-            var httpResponse = self.twitterClient->post(tweetPath, request);
-            if (httpResponse is http:Response) {
+        var httpResponse = self.twitterClient->post(requestPath, request);
+        if (httpResponse is http:Response) {
+            var jsonPayload = httpResponse.getJsonPayload();
+            if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
-                var jsonPayload = httpResponse.getJsonPayload();
-                if (jsonPayload is json) {
-                    if (statusCode == http:STATUS_OK) {
-                        return convertToStatus(jsonPayload);
-                    } else {
-                        return setResponseError(jsonPayload);
-                    }
+                if (statusCode == http:STATUS_OK) {
+                    return convertToStatus(jsonPayload);
                 } else {
-                    error err = error(TWITTER_ERROR_CODE,
-                                      message = "Error occurred while accessing the JSON payload of the response");
-                    return err;
+                    return prepareErrorResponse(jsonPayload);
                 }
             } else {
-                error err = error(TWITTER_ERROR_CODE, message = "Error occurred while invoking the REST API");
-                return err;
+                return prepareError("Error occurred while accessing the JSON payload of the response.");
             }
+        } else {
+            return prepareError("Error occurred while invoking the REST API.");
         }
     }
 
-    # Search for tweets.
+    # Returns a collection of relevant Tweets matching a specified query.
     #
-    # + queryStr - Query string to retrieve the related tweets
-    # + searchRequest - It contains optional params that is needed for search operation(tweetsCount)
-    # + return - If success, Status[] object, else returns error
-    public remote function search(string queryStr, SearchRequest searchRequest) returns @tainted Status[]|error {
-        string tweetPath = SEARCH_ENDPOINT;
-        string encodedQueryValue = check encoding:encodeUriComponent(queryStr, UTF_8);
-        string urlParams = "q=" + encodedQueryValue + "&";
-        string count = searchRequest.tweetsCount;
-        string oauthStr = constructOAuthParams(self.clientId, self.accessToken) + urlParams;
-        if (count != "") {
-            oauthStr = "count=" + count + "&" + oauthStr;
+    # + query - Query string of 500 characters maximum, including operators
+    # + advancedSearch - Optional params that is needed for advanced search operations
+    # + return - If success, `twitter:Status[]` object, else returns `error`
+    public remote function search(string query, AdvancedSearch? advancedSearch = ()) returns @tainted Status[]|error {
+        // TODO: Implement SearchRequest optional parameters
+        var encodedQuery = encoding:encodeUriComponent(query, UTF_8);
+        if (encodedQuery is error) {
+            return prepareError("Error occurred while encoding the query.");
         }
+        string urlParams = "q=" + <string>encodedQuery;
 
+        var header = generateAuthorizationHeader(self.twitterCredential, GET, SEARCH_API, urlParams);
+        if (header is error) {
+            return prepareError("Error occurred while generating authorization header.");
+        }
         http:Request request = new;
-        var requestHeaders = constructRequestHeaders(request, GET, tweetPath, self.clientId, self.clientSecret, self.accessToken,
-            self.accessTokenSecret, oauthStr);
-        if (requestHeaders is error) {
-            error err = error(TWITTER_ERROR_CODE,
-                              message = "Error occurred while encoding parameters when constructing request headers");
-            return err;
-        } else {
-            tweetPath = tweetPath + "?" + urlParams;
-            if (count != "") {
-                tweetPath =  tweetPath + "count=" + count;
-            }
+        request.setHeader("Authorization", <string>header);
+        string requestPath = SEARCH_API + "?" + urlParams;
 
-            var httpResponse = self.twitterClient->get(tweetPath, request);
-            if (httpResponse is http:Response) {
+        var httpResponse = self.twitterClient->get(requestPath, request);
+        if (httpResponse is http:Response) {
+            var jsonPayload = httpResponse.getJsonPayload();
+            if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
-                var jsonPayload = httpResponse.getJsonPayload();
-                if (jsonPayload is json) {
-                    if (statusCode == http:STATUS_OK) {
-                        Status[] searchResponse = [];
-                        if (jsonPayload.statuses is json) {
-                            searchResponse = convertToStatuses(<json[]>jsonPayload.statuses);
-                        }
-                        return searchResponse;
-                    } else {
-                        return setResponseError(jsonPayload);
-                    }
+                if (statusCode == http:STATUS_OK) {
+                    return convertToStatuses(<json[]>jsonPayload.statuses);
                 } else {
-                    error err = error(TWITTER_ERROR_CODE,
-                                      message = "Error occurred while accessing the JSON payload of the response");
-                    return err;
+                    return prepareErrorResponse(jsonPayload);
                 }
             } else {
-                error err = error(TWITTER_ERROR_CODE, message = "Error occurred while invoking the REST API");
-                return err;
+                return prepareError("Error occurred while accessing the JSON payload of the response.");
             }
+        } else {
+            return prepareError("Error occurred while invoking the REST API.");
         }
+
     }
 
-    # Retrive a single status.
+    # Returns a single Tweet, specified by the id parameter. The Tweet's author will also be embedded within the Tweet.
     #
     # + id - The numerical ID of the desired status
-    # + return - If success, returns Status object, else returns error
-    public remote function showStatus(int id) returns @tainted Status|error {
-        http:Request request = new;
-        string tweetPath = SHOW_STATUS_ENDPOINT;
-        string urlParams = ID + id.toString();
-        string oauthStr = urlParams + "&" + constructOAuthParams(self.clientId, self.accessToken);
+    # + return - If success, returns `twitter:Status` object, else returns `error`
+    public remote function getTweet(int id) returns @tainted Status|error {
+        string urlParams = "id=" + id.toString();
 
-        var requestHeaders = constructRequestHeaders(request, GET, tweetPath, self.clientId, self.clientSecret,
-            self.accessToken, self.accessTokenSecret, oauthStr);
-        if (requestHeaders is error) {
-            error err = error(TWITTER_ERROR_CODE,
-                              message = "Error occurred while encoding parameters when constructing request headers");
-            return err;
-        } else {
-            tweetPath = tweetPath + "?" + urlParams;
-            var httpResponse = self.twitterClient->get(tweetPath, request);
-            if (httpResponse is http:Response) {
+        var header = generateAuthorizationHeader(self.twitterCredential, GET, SHOW_STATUS_API, urlParams);
+        if (header is error) {
+            return prepareError("Error occurred while generating authorization header.");
+        }
+        http:Request request = new;
+        request.setHeader("Authorization", <string>header);
+        string requestPath = SHOW_STATUS_API + "?" + urlParams;
+
+        var httpResponse = self.twitterClient->get(requestPath, request);
+        if (httpResponse is http:Response) {
+            var jsonPayload = httpResponse.getJsonPayload();
+            if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
-                var jsonPayload = httpResponse.getJsonPayload();
-                if (jsonPayload is json) {
-                    if (statusCode == http:STATUS_OK) {
-                        return convertToStatus(jsonPayload);
-                    } else {
-                        return setResponseError(jsonPayload);
-                    }
+                if (statusCode == http:STATUS_OK) {
+                    return convertToStatus(jsonPayload);
                 } else {
-                    error err = error(TWITTER_ERROR_CODE,
-                                      message = "Error occurred while accessing the JSON payload of the response");
-                    return err;
+                    return prepareErrorResponse(jsonPayload);
                 }
             } else {
-                error err = error(TWITTER_ERROR_CODE, message = "Error occurred while invoking the REST API");
-                return err;
+                return prepareError("Error occurred while accessing the JSON payload of the response.");
             }
+        } else {
+            return prepareError("Error occurred while invoking the REST API.");
         }
     }
 
-    # Distroy a status.
+    # Destroys the status. The authenticating user must be the author of the specified status.
+    # Returns the destroyed status; if successful.
     #
     # + id - The numerical ID of the desired status
-    # + return - If success, returns Status object, else returns error
-    public remote function destroyStatus(int id) returns @tainted Status|error {
-        http:Request request = new;
-        string oauthStr = constructOAuthParams(self.clientId, self.accessToken);
-
-        string tweetPath = DESTROY_STATUS_ENDPOINT + id.toString() + JSON;
-        var requestHeaders = constructRequestHeaders(request, POST, tweetPath, self.clientId, self.clientSecret,
-            self.accessToken, self.accessTokenSecret, oauthStr);
-        if (requestHeaders is error) {
-            error err = error(TWITTER_ERROR_CODE,
-                              message = "Error occurred while encoding parameters when constructing request headers");
-            return err;
-        } else {
-            var httpResponse = self.twitterClient->post(tweetPath, request);
-            if (httpResponse is http:Response) {
-                int statusCode = httpResponse.statusCode;
-                var jsonPayload = httpResponse.getJsonPayload();
-                if (jsonPayload is json) {
-                    if (statusCode == http:STATUS_OK) {
-                        return convertToStatus(jsonPayload);
-                    } else {
-                        return setResponseError(jsonPayload);
-                    }
-                } else {
-                    error err = error(TWITTER_ERROR_CODE,
-                                      message = "Error occurred while accessing the JSON payload of the response");
-                    return err;
-                }
-            } else {
-                error err = error(TWITTER_ERROR_CODE, message = "Error occurred while invoking the REST API");
-                return err;
-            }
+    # + return - If success, returns `twitter:Status` object, else returns `error`
+    public remote function deleteTweet(int id) returns @tainted Status|error {
+        string requestPath = DESTROY_STATUS_API + id.toString() + ".json";
+        var header = generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
+        if (header is error) {
+            return prepareError("Error occurred while generating authorization header.");
         }
-    }
-
-    # Retrive closest trend locations.
-    #
-    # + lat - Latitude of the location
-    # + long - Longitude of the location
-    # + return - If success, returns Location[] object, else returns error
-    public remote function getClosestTrendLocations(float lat, float long) returns @tainted Location[]|error {
-        string tweetPath = TRENDS_ENDPOINT;
-        string urlParams = LAT + lat.toString() + LONG + long.toString();
-        string oauthStr = urlParams.substring(1, urlParams.length()) + "&" + constructOAuthParams(self.clientId,
-                self.accessToken);
         http:Request request = new;
-        var requestHeaders = constructRequestHeaders(request, GET, tweetPath, self.clientId, self.clientSecret,
-            self.accessToken, self.accessTokenSecret, oauthStr);
-        if (requestHeaders is error) {
-            error err = error(TWITTER_ERROR_CODE,
-                              message = "Error occurred while encoding parameters when constructing request headers");
-            return err;
-        } else {
-            tweetPath = tweetPath + "?" + urlParams.substring(1, urlParams.length());
+        request.setHeader("Authorization", <string>header);
 
-            var httpResponse = self.twitterClient->get(tweetPath, request);
-            if (httpResponse is http:Response) {
+        var httpResponse = self.twitterClient->post(requestPath, request);
+        if (httpResponse is http:Response) {
+            var jsonPayload = httpResponse.getJsonPayload();
+            if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
-                var jsonPayload = httpResponse.getJsonPayload();
-                if (jsonPayload is json) {
-                    if (statusCode == http:STATUS_OK) {
-                        return convertToLocations(<json[]>jsonPayload);
-                    } else {
-                        return setResponseError(jsonPayload);
-                    }
+                if (statusCode == http:STATUS_OK) {
+                    return convertToStatus(jsonPayload);
                 } else {
-                    error err = error(TWITTER_ERROR_CODE,
-                                      message = "Error occurred while accessing the JSON payload of the response");
-                    return err;
+                    return prepareErrorResponse(jsonPayload);
                 }
             } else {
-                error err = error(TWITTER_ERROR_CODE, message = "Error occurred while invoking the REST API");
-                return err;
+                return prepareError("Error occurred while accessing the JSON payload of the response.");
             }
-        }
-    }
-
-    # Retrive top trends by place.
-    #
-    # + locationId - Where On Earth ID of the location to return trending information for
-    # + return - If success, returns Trends[] object, else returns error
-    public remote function getTopTrendsByPlace(int locationId) returns @tainted Trends[]|error {
-        string tweetPath = TRENDS_PLACE_ENDPOINT;
-        string urlParams = ID + locationId.toString();
-        string oauthStr = urlParams + "&" + constructOAuthParams(self.clientId, self.accessToken);
-
-        http:Request request = new;
-        var requestHeaders = constructRequestHeaders(request, GET, tweetPath, self.clientId, self.clientSecret,
-            self.accessToken, self.accessTokenSecret, oauthStr);
-        if (requestHeaders is error) {
-            error err = error(TWITTER_ERROR_CODE,
-                              message = "Error occurred while encoding parameters when constructing request headers");
-            return err;
         } else {
-            tweetPath = tweetPath + "?" + urlParams;
-
-            var httpResponse = self.twitterClient->get(tweetPath, request);
-            if (httpResponse is http:Response) {
-                int statusCode = httpResponse.statusCode;
-                var jsonPayload = httpResponse.getJsonPayload();
-                if (jsonPayload is json) {
-                    if (statusCode == http:STATUS_OK) {
-                        return convertTrends(jsonPayload);
-                    } else {
-                        return setResponseError(jsonPayload);
-                    }
-                } else {
-                    error err = error(TWITTER_ERROR_CODE,
-                                      message = "Error occurred while accessing the JSON payload of the response");
-                    return err;
-                }
-            } else {
-                error err = error(TWITTER_ERROR_CODE, message = "Error occurred while invoking the REST API");
-                return err;
-            }
+            return prepareError("Error occurred while invoking the REST API.");
         }
     }
 };
 
-# Twitter Connector configurations can be setup here.
+type TwitterCredential record {
+    string accessToken;
+    string accessTokenSecret;
+    string consumerKey;
+    string consumerSecret;
+};
+
+# The Twitter connector configurations.
 #
 # + accessToken - The access token of the Twitter account
 # + accessTokenSecret - The access token secret of the Twitter account
-# + clientId - The consumer key of the Twitter account
-# + clientSecret - The consumer secret of the Twitter account
-# + clientConfig - Client endpoint configurations provided by the user
+# + consumerKey - The consumer key of the Twitter account
+# + consumerSecret - The consumer secret of the Twitter account
+# + clientConfig - HTTP client endpoint configurations
 public type TwitterConfiguration record {
     string accessToken;
     string accessTokenSecret;
-    string clientId;
-    string clientSecret;
+    string consumerKey;
+    string consumerSecret;
     http:ClientConfiguration clientConfig = {};
 };
