@@ -1,7 +1,7 @@
 [project]
 org-name = "ldclakmal"
-version = "1.0.0"
+version = "1.0.1"
 license = ["Apache-2.0"]
 authors = ["Chanaka Lakmal"]
 repository = "https://github.com/ldclakmal/module-twitter"
-keywords = ["ballerina", "twitter", "endpoint", "connector"]
+keywords = ["ballerina", "twitter", "connector", "integration"]

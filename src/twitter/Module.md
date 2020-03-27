@@ -2,43 +2,47 @@ Connects to Twitter from Ballerina.
 
 # Module Overview
 
-The Twitter connector allows you to tweet, retweet, unretweet, and search for tweets through the Twitter REST API.
-You can also retrieve and destroy a status.
+The Twitter connector allows you to tweet, retweet, unretweet, search, retrieve and delete status (AKA Tweets) through the Twitter REST API.
 
 **Status Operations**
 
-The `ldclakmal/twitter` module contains operations that work with statuses. You can update the current status, retweet a tweet, untweet a retweeted status, retrieve a status, and destroy a status.
+The `ldclakmal/twitter` module contains operations that work with statuses. Status is also known as a 'Tweet'. You can update the current status, retweet a tweet, untweet a retweeted status, retrieve a status, and delete a status.
+
+> Twitter API: https://developer.twitter.com/en/docs/tweets/post-and-engage/overview
 
 **Search Operations**
 
-The `ldclakmal/twitter` module contains operations that search for tweets.
+The `ldclakmal/twitter` module contains operations that search for statuses. Status is also known as a 'Tweet'.
+
+> Twitter API: https://developer.twitter.com/en/docs/tweets/search/overview
 
 
 ## Compatibility
-|                    |    Version     |  
-|:------------------:|:--------------:|
-| Ballerina Language |   1.2.0        |
-| Twitter API        |   1.1          |
+|                    | Version                                                          |
+|:------------------:|:----------------------------------------------------------------:|
+| Ballerina Language | 1.2.0                                                            |
+| Twitter API        | [1.1](https://developer.twitter.com/en/docs/api-reference-index) |
 
 
-## Samples
+## Getting Started
 
 First, import the `ldclakmal/twitter` module into the Ballerina project.
 
 ```ballerina
 import ldclakmal/twitter;
 ```
-    
+
 The Twitter connector can be instantiated using the Consumer Key (API key), Consumer Secret (API secret key), Access Token, and Access Token Secret in the Twitter configuration.
 
 **Obtaining API Keys and Tokens to Run the Sample**
 
-1. Visit https://apps.twitter.com/app/new and log in.
-2. Provide the required information about the application.
-3. Agree to the Developer Agreement and click **Create your Twitter application**.
-4. After creating your Twitter application, your Consumer Key and Consumer Secret will be displayed in the "Keys and tokens" tab of your app on Twitter.
-5. Click the **Keys and tokens** tab, and then enable your Twitter account to use this application by clicking the **Create my access token** button.
-6. Copy the Consumer key (API key), Consumer Secret (API secret key), Access Token, and Access Token Secret from the screen.
+1. Create a Twitter account, if you don't have any.
+2. Visit https://apps.twitter.com/app/new and sign in.
+3. Provide the required information about the application.
+4. Agree to the Developer Agreement and click **Create your Twitter application**.
+5. After creating your Twitter application, your Consumer Key and Consumer Secret will be displayed in the "Keys and tokens" tab of your app on Twitter.
+6. Click the **Keys and tokens** tab, and then enable your Twitter account to use this application by clicking the **Create my access token** button.
+7. Copy the Consumer key (API key), Consumer Secret (API secret key), Access Token, and Access Token Secret from the screen.
 
 **NOTE:** For more information, refer to the [Getting started](https://developer.twitter.com/en/docs/basics/getting-started) guide.
 
@@ -129,7 +133,7 @@ The `search` API searches for Tweets using a query string. It returns a `twitter
 
 ```ballerina
 string query = "twitter";
-var result = twitterClient->search(queryStr, request);
+var result = twitterClient->search(query);
 if (result is twitter:Status[]) {
     io:println("Search Result: ", result);
 } else {
