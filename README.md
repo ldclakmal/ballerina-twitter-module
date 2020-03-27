@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/ldclakmal/module-twitter.svg?branch=master)](https://travis-ci.org/ldclakmal/module-twitter)
+[![Build Status](https://travis-ci.com/ldclakmal/ballerina-twitter-module.svg?branch=master)](https://travis-ci.com/ldclakmal/ballerina-twitter-module) [![CI](https://github.com/ldclakmal/ballerina-twitter-module/workflows/CI/badge.svg)](https://github.com/ldclakmal/ballerina-twitter-module/actions?query=workflow%3ACI) [![Deployment](https://github.com/ldclakmal/ballerina-twitter-module/workflows/Deployment/badge.svg)](https://github.com/ldclakmal/ballerina-twitter-module/actions?query=workflow%3ADeployment)
 
 # Ballerina Twitter Connector
 
