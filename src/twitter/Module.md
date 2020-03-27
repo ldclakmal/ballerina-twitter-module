@@ -1,4 +1,4 @@
-Connects to Twitter from Ballerina.
+Twitter is what’s happening now. Twitter’s developer platform provides many API products, tools, and resources that enable you to harness the power of Twitter's open, global, and real-time communication network. This module provide capabilities to connects to Twitter from Ballerina.
 
 # Module Overview
 
@@ -26,12 +26,6 @@ The `ldclakmal/twitter` module contains operations that search for statuses. Sta
 
 ## Getting Started
 
-First, import the `ldclakmal/twitter` module into the Ballerina project.
-
-```ballerina
-import ldclakmal/twitter;
-```
-
 The Twitter connector can be instantiated using the Consumer Key (API key), Consumer Secret (API secret key), Access Token, and Access Token Secret in the Twitter configuration.
 
 **Obtaining API Keys and Tokens to Run the Sample**
@@ -54,10 +48,18 @@ ACCESS_TOKEN="<Your Access Token>"
 ACCESS_TOKEN_SECRET="<Your Access Token Secret>"
 ```
 
-Now create the Twitter client as follows:
+## API Guide
+
+First, import the `ldclakmal/twitter` module into the Ballerina project.
 
 ```ballerina
-twitter:TwitterConfiguration twitterConfig = {
+import ldclakmal/twitter;
+```
+
+Now, create the Twitter client using the credentials entered into `ballerina.conf` file.
+
+```ballerina
+twitter:Configuration twitterConfig = {
     consumerKey: config:getAsString("CONSUMER_KEY"),
     consumerSecret: config:getAsString("CONSUMER_SECRET"),
     accessToken: config:getAsString("ACCESS_TOKEN"),
@@ -147,7 +149,7 @@ if (result is twitter:Status[]) {
 import ballerina/io;
 import ldclakmal/twitter;
 
-twitter:TwitterConfiguration twitterConfig = {
+twitter:Configuration twitterConfig = {
     consumerKey: config:getAsString("CONSUMER_KEY"),
     consumerSecret: config:getAsString("CONSUMER_SECRET"),
     accessToken: config:getAsString("ACCESS_TOKEN"),
