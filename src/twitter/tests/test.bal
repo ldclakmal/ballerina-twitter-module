@@ -5,7 +5,7 @@ import ballerina/stringutils;
 
 int tweetId = 0;
 
-TwitterConfiguration twitterConfig = {
+Configuration twitterConfig = {
     consumerKey: system:getEnv("CONSUMER_KEY"),
     consumerSecret: system:getEnv("CONSUMER_SECRET"),
     accessToken: system:getEnv("ACCESS_TOKEN"),

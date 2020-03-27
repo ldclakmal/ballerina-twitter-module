@@ -5,9 +5,9 @@ import ballerina/http;
 public type Client client object {
 
     http:Client twitterClient;
-    TwitterCredential twitterCredential;
+    Credential twitterCredential;
 
-    public function __init(TwitterConfiguration twitterConfig) {
+    public function __init(Configuration twitterConfig) {
         self.twitterClient = new(TWITTER_API_URL, twitterConfig.clientConfig);
         self.twitterCredential = {
             accessToken: twitterConfig.accessToken,
@@ -223,7 +223,7 @@ public type Client client object {
     }
 };
 
-type TwitterCredential record {
+type Credential record {
     string accessToken;
     string accessTokenSecret;
     string consumerKey;
@@ -237,7 +237,7 @@ type TwitterCredential record {
 # + consumerKey - The consumer key of the Twitter account
 # + consumerSecret - The consumer secret of the Twitter account
 # + clientConfig - HTTP client endpoint configurations
-public type TwitterConfiguration record {
+public type Configuration record {
     string accessToken;
     string accessTokenSecret;
     string consumerKey;

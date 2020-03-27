@@ -5,7 +5,7 @@ import ballerina/log;
 import ballerina/system;
 import ballerina/time;
 
-function generateAuthorizationHeader(TwitterCredential twitterCredential, string httpMethod, string serviceEP,
+function generateAuthorizationHeader(Credential twitterCredential, string httpMethod, string serviceEP,
                                      string? urlParams = ()) returns string|error {
     string nonce = system:uuid();
     int timeInSeconds = time:currentTime().time / 1000;
