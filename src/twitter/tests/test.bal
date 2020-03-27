@@ -1,4 +1,4 @@
-import ballerina/config;
+import ballerina/system;
 import ballerina/test;
 import ballerina/time;
 import ballerina/stringutils;
@@ -6,10 +6,10 @@ import ballerina/stringutils;
 int tweetId = 0;
 
 TwitterConfiguration twitterConfig = {
-    consumerKey: config:getAsString("CONSUMER_KEY"),
-    consumerSecret: config:getAsString("CONSUMER_SECRET"),
-    accessToken: config:getAsString("ACCESS_TOKEN"),
-    accessTokenSecret: config:getAsString("ACCESS_TOKEN_SECRET")
+    consumerKey: system:getEnv("CONSUMER_KEY"),
+    consumerSecret: system:getEnv("CONSUMER_SECRET"),
+    accessToken: system:getEnv("ACCESS_TOKEN"),
+    accessTokenSecret: system:getEnv("ACCESS_TOKEN_SECRET")
 };
 Client twitterClient = new(twitterConfig);
 

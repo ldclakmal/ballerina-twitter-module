@@ -1,12 +1,12 @@
 # Ballerina Twitter Connector Test
 
-1. Create `ballerina.conf` file in `module-twitter`, with following keys and provide values for the variables.
+1. Export the following key values in order to read as environment variables.
     
 ```bash
-CONSUMER_KEY="<Your Consumer Key>"
-CONSUMER_SECRET="<Your Consumer Secret>"
-ACCESS_TOKEN="<Your Access Token>"
-ACCESS_TOKEN_SECRET="<Your Access Token Secret>"
+$ export CONSUMER_KEY="<Your Consumer Key>"
+$ export CONSUMER_SECRET="<Your Consumer Secret>"
+$ export ACCESS_TOKEN="<Your Access Token>"
+$ export ACCESS_TOKEN_SECRET="<Your Access Token Secret>"
 ```
 
 2. Navigate to the folder `module-twitter` and run the test cases.

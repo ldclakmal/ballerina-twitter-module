@@ -3,4 +3,4 @@ script:
     - sudo dpkg -i ballerina-linux-installer-x64-1.2.0.deb
     - sudo apt-get install -f
     - ballerina --version
-    - ballerina build -c --skip-tests twitter
+    - ballerina build -c twitter
