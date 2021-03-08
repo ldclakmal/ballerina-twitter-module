@@ -1,14 +1,14 @@
-[![Build Status](https://travis-ci.com/ldclakmal/ballerina-twitter-module.svg?branch=master)](https://travis-ci.com/ldclakmal/ballerina-twitter-module) [![CI](https://github.com/ldclakmal/ballerina-twitter-module/workflows/CI/badge.svg)](https://github.com/ldclakmal/ballerina-twitter-module/actions?query=workflow%3ACI) [![Deployment](https://github.com/ldclakmal/ballerina-twitter-module/workflows/Deployment/badge.svg)](https://github.com/ldclakmal/ballerina-twitter-module/actions?query=workflow%3ADeployment)
-
 # Ballerina Twitter Connector
 
-Twitter is what’s happening now. Twitter’s developer platform provides many API products, tools, and resources that enable you to harness the power of Twitter's open, global, and real-time communication network. This module provide capabilities to connects to Twitter from Ballerina.
+[![Build](https://github.com/ldclakmal/ballerina-twitter-module/actions/workflows/master.yml/badge.svg)](https://github.com/ldclakmal/ballerina-twitter-module/actions/workflows/master.yml)
 
-The Twitter connector allows you to tweet, retweet, unretweet, search, retrieve and delete status (AKA Tweets) through the Twitter REST API.
+Twitter is what’s happening now. Twitter’s developer platform provides many API products, tools, and resources that enable you to harness the power of Twitter's open, global, and real-time communication network. This module provides capabilities to connects to Twitter from Ballerina.
+
+The Twitter connector allows you to tweet, retweet, un-retweet, search, retrieve and delete status (AKA Tweets) through the Twitter REST API.
 
 **Status Operations**
 
-The `ldclakmal/twitter` module contains operations that work with statuses. Status is also known as a 'Tweet'. You can update the current status, retweet a tweet, untweet a retweeted status, retrieve a status, and delete a status.
+The `ldclakmal/twitter` module contains operations that work with statuses. Status is also known as a 'Tweet'. You can update the current status, retweet a tweet, un-tweet a retweeted status, retrieve a status, and delete a status.
 
 > Twitter API: https://developer.twitter.com/en/docs/tweets/post-and-engage/overview
 
@@ -18,13 +18,11 @@ The `ldclakmal/twitter` module contains operations that search for statuses. Sta
 
 > Twitter API: https://developer.twitter.com/en/docs/tweets/search/overview
 
-
 ## Compatibility
 |                    | Version                                                          |
 |:------------------:|:----------------------------------------------------------------:|
-| Ballerina Language | 1.2.0                                                            |
+| Ballerina Language | Swan Lake Alpha 1                                                          |
 | Twitter API        | [1.1](https://developer.twitter.com/en/docs/api-reference-index) |
-
 
 ## Getting Started
 
