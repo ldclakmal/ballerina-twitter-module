@@ -1,8 +1,10 @@
 # Ballerina Twitter Connector
 
-[![Build](https://github.com/ldclakmal/ballerina-twitter-module/actions/workflows/master.yml/badge.svg)](https://github.com/ldclakmal/ballerina-twitter-module/actions/workflows/master.yml)
+![Build](https://github.com/ldclakmal/ballerina-twitter-module/workflows/Build/badge.svg)
 
 Twitter is what’s happening now. Twitter’s developer platform provides many API products, tools, and resources that enable you to harness the power of Twitter's open, global, and real-time communication network. This module provides capabilities to connects to Twitter from Ballerina.
+
+# Module Overview
 
 The Twitter connector allows you to tweet, retweet, un-retweet, search, retrieve and delete status (AKA Tweets) through the Twitter REST API.
 
@@ -21,7 +23,7 @@ The `ldclakmal/twitter` module contains operations that search for statuses. Sta
 ## Compatibility
 |                    | Version                                                          |
 |:------------------:|:----------------------------------------------------------------:|
-| Ballerina Language | Swan Lake Alpha 1                                                          |
+| Ballerina Language | Swan Lake Alpha 3                                                |
 | Twitter API        | [1.1](https://developer.twitter.com/en/docs/api-reference-index) |
 
 ## Getting Started
@@ -65,21 +67,21 @@ twitter:Configuration twitterConfig = {
     accessToken: config:getAsString("ACCESS_TOKEN"),
     accessTokenSecret: config:getAsString("ACCESS_TOKEN_SECRET")
 };
-twitter:Client twitterClient = new(twitterConfig);
+twitter:Client twitterClient = check new(twitterConfig);
 ```
 
 The `tweet` API updates the current status as a Tweet. If the status was updated successfully, the response from the `tweet` API is a `twitter:Status` object with the ID of the status, created time of status, etc. If the status update was unsuccessful, the response is a `error`.
 
 ```ballerina
 string status = "This is a sample tweet!";
-var result = twitterClient->tweet(status);
+twitter:Status|twitter:Error result = twitterClient->tweet(status);
 if (result is twitter:Status) {
     // If successful, print the tweet ID and text.
     io:println("Tweet ID: ", result.id);
     io:println("Tweet: ", result.text);
 } else {
     // If unsuccessful, print the error returned.
-    io:println("Error: ", result);
+    log:printError("Error: ", result.message());
 }
 ```
 
@@ -87,11 +89,11 @@ The `retweet` API retweets a Tweet. It returns a `twitter:Status` object if succ
 
 ```ballerina
 int tweetId = 1093833789346861057;
-var result = twitterClient->retweet(tweetId);
+twitter:Status|twitter:Error result = twitterClient->retweet(tweetId);
 if (result is twitter:Status) {
     io:println("Retweet ID: ", result.id);
 } else {
-    io:println("Error: ", result);
+    log:printError("Error: ", result.message());
 }
 ```
 
@@ -99,11 +101,11 @@ The `unretweet` API undo retweet of a Tweet. It returns a `twitter:Status` objec
 
 ```ballerina
 int tweetId = 1093833789346861057;
-var result = twitterClient->unretweet(tweetId);
+twitter:Status|twitter:Error result = twitterClient->unretweet(tweetId);
 if (result is twitter:Status) {
     io:println("Un Retweet ID: ", result.id);
 } else {
-    io:println("Error: ", result);
+    log:printError("Error: ", result.message());
 }
 ```
 
@@ -111,11 +113,11 @@ The `getTweet` API returns a single Tweet, specified by the id parameter. It ret
 
 ```ballerina
 int tweetId = 1093833789346861057;
-var result = twitterClient->getTweet(tweetId);
+twitter:Status|twitter:Error result = twitterClient->getTweet(tweetId);
 if (result is twitter:Status) {
     io:println("Get Tweet ID: ", result.id);
 } else {
-    io:println("Error: ", result);
+    log:printError("Error: ", result.message());
 }
 ```
 
@@ -123,11 +125,11 @@ The `deleteTweet` API destroys the Tweet, specified by the id parameter. It retu
 
 ```ballerina
 int tweetId = 1093833789346861057;
-var result = twitterClient->deleteTweet(tweetId);
+twitter:Status|twitter:Error result = twitterClient->deleteTweet(tweetId);
 if (result is twitter:Status) {
     io:println("Delete Tweet: ", result.id);
 } else {
-    io:println("Error: ", result);
+    log:printError("Error: ", result.message());
 }
 ```
 
@@ -135,11 +137,11 @@ The `search` API searches for Tweets using a query string. It returns a `twitter
 
 ```ballerina
 string query = "twitter";
-var result = twitterClient->search(query);
+twitter:Status[]|twitter:Error result = twitterClient->search(query);
 if (result is twitter:Status[]) {
     io:println("Search Result: ", result);
 } else {
-    io:println("Error: ", result);
+    log:printError("Error: ", result.message());
 }
 ```
 
@@ -147,6 +149,7 @@ if (result is twitter:Status[]) {
 
 ```ballerina
 import ballerina/io;
+import ballerina/log;
 import ldclakmal/twitter;
 
 twitter:Configuration twitterConfig = {
@@ -155,18 +158,18 @@ twitter:Configuration twitterConfig = {
     accessToken: config:getAsString("ACCESS_TOKEN"),
     accessTokenSecret: config:getAsString("ACCESS_TOKEN_SECRET")
 };
-twitter:Client twitterClient = new(twitterConfig);
+twitter:Client twitterClient = check new(twitterConfig);
 
 public function main() {
     string status = "This is a sample tweet!";
-    var result = twitterClient->tweet(status);
+    twitter:Status|twitter:Error result = twitterClient->tweet(status);
     if (result is twitter:Status) {
         // If successful, print the tweet ID and text.
         io:println("Tweet ID: ", result.id);
         io:println("Tweet: ", result.text);
     } else {
         // If unsuccessful, print the error returned.
-        io:println("Error: ", result);
+        log:printError("Error: ", result.message());
     }
 }
 ```
