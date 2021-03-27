@@ -1,87 +1,77 @@
-import ballerina/system;
+import ballerina/os;
 import ballerina/test;
 import ballerina/time;
-import ballerina/stringutils;
 
 int tweetId = 0;
 
 Configuration twitterConfig = {
-    consumerKey: system:getEnv("CONSUMER_KEY"),
-    consumerSecret: system:getEnv("CONSUMER_SECRET"),
-    accessToken: system:getEnv("ACCESS_TOKEN"),
-    accessTokenSecret: system:getEnv("ACCESS_TOKEN_SECRET")
+    consumerKey: os:getEnv("CONSUMER_KEY"),
+    consumerSecret: os:getEnv("CONSUMER_SECRET"),
+    accessToken: os:getEnv("ACCESS_TOKEN"),
+    accessTokenSecret: os:getEnv("ACCESS_TOKEN_SECRET")
 };
-Client twitterClient = new(twitterConfig);
+Client twitterClient = check new(twitterConfig);
 
 @test:Config {}
 function testTweet() {
-    time:Time time = time:currentTime();
-    string status = "Ballerina Twitter Connector: " + time:toString(time);
-    var tweetResponse = twitterClient->tweet(status);
-
-    if (tweetResponse is Status) {
-        tweetId = <@untainted> tweetResponse.id;
-        test:assertTrue(stringutils:contains(tweetResponse.text, status), "Failed to call tweet()");
+    time:Utc time = time:utcNow();
+    string status = "Ballerina Twitter Connector: " + time[0].toString();
+    Status|Error result = twitterClient->tweet(status);
+    if (result is Status) {
+        tweetId = <@untainted> result.id;
+        test:assertTrue(result.text.includes(status), "Failed to call tweet()");
     } else {
-        test:assertFail(<string>tweetResponse.detail()["message"]);
+        test:assertFail(result.message());
     }
 }
 
-@test:Config {
-    dependsOn: ["testTweet"]
-}
+@test:Config {}
 function testRetweet() {
-    var tweetResponse = twitterClient->retweet(tweetId);
-    if (tweetResponse is Status) {
-        test:assertTrue(tweetResponse.retweeted, "Failed to call retweet()");
+    Status|Error result = twitterClient->retweet(tweetId);
+    if (result is Status) {
+        test:assertTrue(result.retweeted, "Failed to call retweet()");
     } else {
-        test:assertFail(<string>tweetResponse.detail()["message"]);
+        test:assertFail(result.message());
     }
 }
 
-@test:Config {
-    dependsOn: ["testRetweet"]
-}
+@test:Config {}
 function testUnretweet() {
-    var tweetResponse = twitterClient->unretweet(tweetId);
-    if (tweetResponse is Status) {
-        test:assertEquals(tweetResponse.id, tweetId, "Failed to call unretweet()");
+    Status|Error result = twitterClient->unretweet(tweetId);
+    if (result is Status) {
+        test:assertEquals(result.id, tweetId, "Failed to call unretweet()");
     } else {
-        test:assertFail(<string>tweetResponse.detail()["message"]);
+        test:assertFail(result.message());
     }
 }
 
-@test:Config {
-    dependsOn: ["testUnretweet"]
-}
+@test:Config {}
 function testGetTweet() {
-    var tweetResponse = twitterClient->getTweet(tweetId);
-    if (tweetResponse is Status) {
-        test:assertEquals(tweetResponse.id, tweetId, "Failed to call getTweet()");
+    Status|Error result = twitterClient->getTweet(tweetId);
+    if (result is Status) {
+        test:assertEquals(result.id, tweetId, "Failed to call getTweet()");
     } else {
-        test:assertFail(<string>tweetResponse.detail()["message"]);
+        test:assertFail(result.message());
     }
 }
 
-@test:Config {
-    dependsOn: ["testGetTweet"]
-}
+@test:Config {}
 function testDeleteTweet() {
-    var tweetResponse = twitterClient->deleteTweet(tweetId);
-    if (tweetResponse is Status) {
-        test:assertEquals(tweetResponse.id, tweetId, "Failed to call deleteTweet()");
+    Status|Error result = twitterClient->deleteTweet(tweetId);
+    if (result is Status) {
+        test:assertEquals(result.id, tweetId, "Failed to call deleteTweet()");
     } else {
-        test:assertFail(<string>tweetResponse.detail()["message"]);
+        test:assertFail(result.message());
     }
 }
 
 @test:Config {}
 function testSearch() {
     string query = "#ballerina";
-    var tweetResponse = twitterClient->search(query);
-    if (tweetResponse is Status[]) {
-        test:assertTrue(tweetResponse.length() > 0, "Failed to call search()");
+    Status[]|Error result = twitterClient->search(query);
+    if (result is Status[]) {
+        test:assertTrue(result.length() > 0, "Failed to call search()");
     } else {
-        test:assertFail(<string>tweetResponse.detail()["message"]);
+        test:assertFail(result.message());
     }
 }
