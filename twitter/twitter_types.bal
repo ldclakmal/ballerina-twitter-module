@@ -11,16 +11,16 @@
 # + retweetCount - Retweet count of the status
 # + lang - Language of the status
 public type Status record {
-    string createdAt = "";
-    int id = 0;
-    string text = "";
-    string 'source = "";
-    boolean truncated = false;
-    boolean favorited = false;
-    boolean retweeted = false;
-    int favoriteCount = 0;
-    int retweetCount = 0;
-    string lang = "";
+    string createdAt;
+    int id;
+    string text;
+    string 'source;
+    boolean truncated;
+    boolean favorited;
+    boolean retweeted;
+    int favoriteCount;
+    int retweetCount;
+    string lang;
 };
 
 # Define the advanced search parameters.

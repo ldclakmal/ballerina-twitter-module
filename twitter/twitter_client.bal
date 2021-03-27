@@ -1,14 +1,40 @@
-import ballerina/encoding;
 import ballerina/http;
+import ballerina/url;
+
+# The Twitter client configurations.
+#
+# + accessToken - The access token of the Twitter account
+# + accessTokenSecret - The access token secret of the Twitter account
+# + consumerKey - The consumer key of the Twitter account
+# + consumerSecret - The consumer secret of the Twitter account
+# + clientConfig - HTTP client configurations
+public type Configuration record {
+    string accessToken;
+    string accessTokenSecret;
+    string consumerKey;
+    string consumerSecret;
+    http:ClientConfiguration clientConfig = {};
+};
+
+type Credential record {
+    string accessToken;
+    string accessTokenSecret;
+    string consumerKey;
+    string consumerSecret;
+};
 
 # The Twitter client object.
-public type Client client object {
+public client class Client {
 
     http:Client twitterClient;
-    TwitterCredential twitterCredential;
+    Credential twitterCredential;
 
-    public function __init(TwitterConfiguration twitterConfig) {
-        self.twitterClient = new(TWITTER_API_URL, twitterConfig.clientConfig);
+    public isolated function init(Configuration twitterConfig) returns Error? {
+        http:Client|http:ClientError result = new(TWITTER_API_URL, twitterConfig.clientConfig);
+        if (result is http:ClientError) {
+            return prepareError("Failed to init Twitter client.", result);
+        }
+        self.twitterClient = checkpanic result;
         self.twitterCredential = {
             accessToken: twitterConfig.accessToken,
             accessTokenSecret: twitterConfig.accessTokenSecret,
@@ -20,29 +46,26 @@ public type Client client object {
     # Updates the authenticating user's current status, also known as Tweeting.
     #
     # + status - The text of status update
-    # + return - If success, returns `twitter:Status` object, else returns `error`
-    public remote function tweet(string status) returns @tainted Status|error {
-        var encodedStatus = encoding:encodeUriComponent(status, UTF_8);
-        if (encodedStatus is error) {
+    # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
+    isolated remote function tweet(string status) returns @tainted Status|Error {
+        string|url:Error encodedStatus = url:encode(status, UTF_8);
+        if (encodedStatus is url:Error) {
             return prepareError("Error occurred while encoding the status.");
         }
-        string urlParams = "status=" + <string>encodedStatus;
+        string urlParams = "status=" + checkpanic encodedStatus;
 
-        var header = generateAuthorizationHeader(self.twitterCredential, POST, UPDATE_API, urlParams);
-        if (header is error) {
-            return prepareError("Error occurred while generating authorization header.");
-        }
+        string header = check generateAuthorizationHeader(self.twitterCredential, POST, UPDATE_API, urlParams);
         http:Request request = new;
-        request.setHeader("Authorization", <string>header);
+        request.setHeader("Authorization", header);
         string requestPath = UPDATE_API + "?" + urlParams;
 
-        var httpResponse = self.twitterClient->post(requestPath, request);
+        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, request);
         if (httpResponse is http:Response) {
-            var jsonPayload = httpResponse.getJsonPayload();
+            json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
                 if (statusCode == http:STATUS_OK) {
-                    return convertToStatus(jsonPayload);
+                    return convertToStatus(<map<json>>jsonPayload);
                 } else {
                     return prepareErrorResponse(jsonPayload);
                 }
@@ -57,23 +80,20 @@ public type Client client object {
     # Retweets a tweet, specified by the id parameter. Returns the original Tweet with Retweet details embedded.
     #
     # + id - The numerical ID of the desired status
-    # + return - If success, returns `twitter:Status` object, else returns `error`
-    public remote function retweet(int id) returns @tainted Status|error {
+    # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
+    isolated remote function retweet(int id) returns @tainted Status|Error {
         string requestPath = RETWEET_API + id.toString() + ".json";
-        var header = generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
-        if (header is error) {
-            return prepareError("Error occurred while generating authorization header.");
-        }
+        string header = check generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
         http:Request request = new;
-        request.setHeader("Authorization", <string>header);
+        request.setHeader("Authorization", header);
 
-        var httpResponse = self.twitterClient->post(requestPath, request);
+        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, request);
         if (httpResponse is http:Response) {
-            var jsonPayload = httpResponse.getJsonPayload();
+            json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
                 if (statusCode == http:STATUS_OK) {
-                    return convertToStatus(jsonPayload);
+                    return convertToStatus(<map<json>>jsonPayload);
                 } else {
                     return prepareErrorResponse(jsonPayload);
                 }
@@ -89,23 +109,20 @@ public type Client client object {
     # Returns the original Tweet, with Retweet details embedded.
     #
     # + id - The numerical ID of the desired status
-    # + return - If success, returns `twitter:Status` object, else returns `error`
-    public remote function unretweet(int id) returns @tainted Status|error {
+    # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
+    isolated remote function unretweet(int id) returns @tainted Status|Error {
         string requestPath = UN_RETWEET_API + id.toString() + ".json";
-        var header = generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
-        if (header is error) {
-            return prepareError("Error occurred while generating authorization header.");
-        }
+        string header = check generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
         http:Request request = new;
-        request.setHeader("Authorization", <string>header);
+        request.setHeader("Authorization", header);
 
-        var httpResponse = self.twitterClient->post(requestPath, request);
+        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, request);
         if (httpResponse is http:Response) {
-            var jsonPayload = httpResponse.getJsonPayload();
+            json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
                 if (statusCode == http:STATUS_OK) {
-                    return convertToStatus(jsonPayload);
+                    return convertToStatus(<map<json>>jsonPayload);
                 } else {
                     return prepareErrorResponse(jsonPayload);
                 }
@@ -122,29 +139,23 @@ public type Client client object {
     # + query - Query string of 500 characters maximum, including operators
     # + advancedSearch - Optional params that is needed for advanced search operations
     # + return - If success, `twitter:Status[]` object, else returns `error`
-    public remote function search(string query, AdvancedSearch? advancedSearch = ()) returns @tainted Status[]|error {
-        // TODO: Implement SearchRequest optional parameters
-        var encodedQuery = encoding:encodeUriComponent(query, UTF_8);
+    remote function search(string query, AdvancedSearch? advancedSearch = ()) returns @tainted Status[]|Error {
+        string|url:Error encodedQuery = url:encode(query, UTF_8);
         if (encodedQuery is error) {
             return prepareError("Error occurred while encoding the query.");
         }
-        string urlParams = "q=" + <string>encodedQuery;
+        string urlParams = "q=" + checkpanic encodedQuery;
 
-        var header = generateAuthorizationHeader(self.twitterCredential, GET, SEARCH_API, urlParams);
-        if (header is error) {
-            return prepareError("Error occurred while generating authorization header.");
-        }
-        http:Request request = new;
-        request.setHeader("Authorization", <string>header);
+        string header = check generateAuthorizationHeader(self.twitterCredential, GET, SEARCH_API, urlParams);
         string requestPath = SEARCH_API + "?" + urlParams;
 
-        var httpResponse = self.twitterClient->get(requestPath, request);
+        http:Response|http:ClientError httpResponse = self.twitterClient->get(requestPath, { "Authorization": header });
         if (httpResponse is http:Response) {
-            var jsonPayload = httpResponse.getJsonPayload();
+            json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
                 if (statusCode == http:STATUS_OK) {
-                    return convertToStatuses(<json[]>jsonPayload.statuses);
+                    return convertToStatuses(<json[]>(checkpanic jsonPayload.statuses));
                 } else {
                     return prepareErrorResponse(jsonPayload);
                 }
@@ -160,25 +171,20 @@ public type Client client object {
     # Returns a single Tweet, specified by the id parameter. The Tweet's author will also be embedded within the Tweet.
     #
     # + id - The numerical ID of the desired status
-    # + return - If success, returns `twitter:Status` object, else returns `error`
-    public remote function getTweet(int id) returns @tainted Status|error {
+    # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
+    isolated remote function getTweet(int id) returns @tainted Status|Error {
         string urlParams = "id=" + id.toString();
 
-        var header = generateAuthorizationHeader(self.twitterCredential, GET, SHOW_STATUS_API, urlParams);
-        if (header is error) {
-            return prepareError("Error occurred while generating authorization header.");
-        }
-        http:Request request = new;
-        request.setHeader("Authorization", <string>header);
+        string header = check generateAuthorizationHeader(self.twitterCredential, GET, SHOW_STATUS_API, urlParams);
         string requestPath = SHOW_STATUS_API + "?" + urlParams;
 
-        var httpResponse = self.twitterClient->get(requestPath, request);
+        http:Response|http:ClientError httpResponse = self.twitterClient->get(requestPath, { "Authorization": header });
         if (httpResponse is http:Response) {
-            var jsonPayload = httpResponse.getJsonPayload();
+            json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
                 if (statusCode == http:STATUS_OK) {
-                    return convertToStatus(jsonPayload);
+                    return convertToStatus(<map<json>>jsonPayload);
                 } else {
                     return prepareErrorResponse(jsonPayload);
                 }
@@ -194,23 +200,20 @@ public type Client client object {
     # Returns the destroyed status; if successful.
     #
     # + id - The numerical ID of the desired status
-    # + return - If success, returns `twitter:Status` object, else returns `error`
-    public remote function deleteTweet(int id) returns @tainted Status|error {
+    # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
+    isolated remote function deleteTweet(int id) returns @tainted Status|Error {
         string requestPath = DESTROY_STATUS_API + id.toString() + ".json";
-        var header = generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
-        if (header is error) {
-            return prepareError("Error occurred while generating authorization header.");
-        }
+        string header = check generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
         http:Request request = new;
-        request.setHeader("Authorization", <string>header);
+        request.setHeader("Authorization", header);
 
-        var httpResponse = self.twitterClient->post(requestPath, request);
+        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, request);
         if (httpResponse is http:Response) {
-            var jsonPayload = httpResponse.getJsonPayload();
+            json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
                 int statusCode = httpResponse.statusCode;
                 if (statusCode == http:STATUS_OK) {
-                    return convertToStatus(jsonPayload);
+                    return convertToStatus(<map<json>>jsonPayload);
                 } else {
                     return prepareErrorResponse(jsonPayload);
                 }
@@ -221,26 +224,4 @@ public type Client client object {
             return prepareError("Error occurred while invoking the REST API.");
         }
     }
-};
-
-type TwitterCredential record {
-    string accessToken;
-    string accessTokenSecret;
-    string consumerKey;
-    string consumerSecret;
-};
-
-# The Twitter connector configurations.
-#
-# + accessToken - The access token of the Twitter account
-# + accessTokenSecret - The access token secret of the Twitter account
-# + consumerKey - The consumer key of the Twitter account
-# + consumerSecret - The consumer secret of the Twitter account
-# + clientConfig - HTTP client endpoint configurations
-public type TwitterConfiguration record {
-    string accessToken;
-    string accessTokenSecret;
-    string consumerKey;
-    string consumerSecret;
-    http:ClientConfiguration clientConfig = {};
-};
+}
