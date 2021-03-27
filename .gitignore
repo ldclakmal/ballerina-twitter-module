@@ -9,6 +9,8 @@ target/
 *.conf
 *.log
 *.lock
+*.json
+*.toml
 
 # CUSTOM files
 tcp_stream
