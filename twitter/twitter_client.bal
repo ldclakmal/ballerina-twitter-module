@@ -24,17 +24,18 @@ type Credential record {
 };
 
 # The Twitter client object.
-public client class Client {
+public isolated client class Client {
 
-    http:Client twitterClient;
-    Credential twitterCredential;
+    private final http:Client twitterClient;
+    private final Credential & readonly twitterCredential;
 
     public isolated function init(Configuration twitterConfig) returns Error? {
         http:Client|http:ClientError result = new(TWITTER_API_URL, twitterConfig.clientConfig);
-        if (result is http:ClientError) {
+        if (result is http:Client) {
+            self.twitterClient = result;
+        } else {
             return prepareError("Failed to init Twitter client.", result);
         }
-        self.twitterClient = checkpanic result;
         self.twitterCredential = {
             accessToken: twitterConfig.accessToken,
             accessTokenSecret: twitterConfig.accessTokenSecret,

@@ -16,7 +16,7 @@ isolated function convertToStatus(map<json> response) returns Status {
 }
 
 // Convert the array of json response into `Status` record array.
-function convertToStatuses(json[] response) returns Status[] {
+isolated function convertToStatuses(json[] response) returns Status[] {
     Status[] statuses = [];
     int i = 0;
     foreach json status in response {
