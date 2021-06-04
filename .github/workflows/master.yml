@@ -14,7 +14,7 @@ jobs:
         uses: ballerina-platform/ballerina-action/@master
         with:
           args:
-            build twitter
+            build --skip-tests twitter
         env:
           CONSUMER_KEY: ${{ secrets.CONSUMER_KEY }}
           CONSUMER_SECRET: ${{ secrets.CONSUMER_SECRET }}
