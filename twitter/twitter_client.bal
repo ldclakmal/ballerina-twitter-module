@@ -27,7 +27,7 @@ type Credential record {
 public isolated client class Client {
 
     private final http:Client twitterClient;
-    private final Credential twitterCredential;
+    private final Credential & readonly twitterCredential;
 
     public isolated function init(Configuration twitterConfig) returns Error? {
         http:Client|http:ClientError result = new(TWITTER_API_URL, twitterConfig.clientConfig);
