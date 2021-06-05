@@ -10,8 +10,8 @@ isolated function generateAuthorizationHeader(Credential twitterCredential, stri
     string timeStamp = timeInSeconds.toString();
 
     string requestParams = "oauth_consumer_key=" + twitterCredential.consumerKey + "&oauth_nonce=" + nonce +
-                                "&oauth_signature_method=HMAC-SHA1&oauth_timestamp=" + timeStamp + "&oauth_token=" +
-                                twitterCredential.accessToken + "&oauth_version=1.0";
+                            "&oauth_signature_method=HMAC-SHA1&oauth_timestamp=" + timeStamp + "&oauth_token=" +
+                            twitterCredential.accessToken + "&oauth_version=1.0";
 
     if (urlParams is string) {
         int comparison = 'string:codePointCompare(requestParams, urlParams);

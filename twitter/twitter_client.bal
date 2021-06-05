@@ -54,13 +54,11 @@ public isolated client class Client {
             return prepareError("Error occurred while encoding the status.");
         }
         string urlParams = "status=" + checkpanic encodedStatus;
-
-        string header = check generateAuthorizationHeader(self.twitterCredential, POST, UPDATE_API, urlParams);
-        http:Request request = new;
-        request.setHeader("Authorization", header);
         string requestPath = UPDATE_API + "?" + urlParams;
-
-        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, request);
+        map<string> headers = {
+            "Authorization": check generateAuthorizationHeader(self.twitterCredential, POST, UPDATE_API, urlParams)
+        };
+        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, (), headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
@@ -84,11 +82,10 @@ public isolated client class Client {
     # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
     isolated remote function retweet(int id) returns @tainted Status|Error {
         string requestPath = RETWEET_API + id.toString() + ".json";
-        string header = check generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
-        http:Request request = new;
-        request.setHeader("Authorization", header);
-
-        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, request);
+        map<string> headers = {
+            "Authorization": check generateAuthorizationHeader(self.twitterCredential, POST, requestPath)
+        };
+        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, (), headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
@@ -113,11 +110,10 @@ public isolated client class Client {
     # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
     isolated remote function unretweet(int id) returns @tainted Status|Error {
         string requestPath = UN_RETWEET_API + id.toString() + ".json";
-        string header = check generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
-        http:Request request = new;
-        request.setHeader("Authorization", header);
-
-        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, request);
+        map<string> headers = {
+            "Authorization": check generateAuthorizationHeader(self.twitterCredential, POST, requestPath)
+        };
+        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, (), headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
@@ -146,11 +142,11 @@ public isolated client class Client {
             return prepareError("Error occurred while encoding the query.");
         }
         string urlParams = "q=" + checkpanic encodedQuery;
-
-        string header = check generateAuthorizationHeader(self.twitterCredential, GET, SEARCH_API, urlParams);
         string requestPath = SEARCH_API + "?" + urlParams;
-
-        http:Response|http:ClientError httpResponse = self.twitterClient->get(requestPath, { "Authorization": header });
+        map<string> headers = {
+            "Authorization": check generateAuthorizationHeader(self.twitterCredential, GET, SEARCH_API, urlParams)
+        };
+        http:Response|http:ClientError httpResponse = self.twitterClient->get(requestPath, headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
@@ -175,11 +171,11 @@ public isolated client class Client {
     # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
     isolated remote function getTweet(int id) returns @tainted Status|Error {
         string urlParams = "id=" + id.toString();
-
-        string header = check generateAuthorizationHeader(self.twitterCredential, GET, SHOW_STATUS_API, urlParams);
         string requestPath = SHOW_STATUS_API + "?" + urlParams;
-
-        http:Response|http:ClientError httpResponse = self.twitterClient->get(requestPath, { "Authorization": header });
+        map<string> headers = {
+            "Authorization": check generateAuthorizationHeader(self.twitterCredential, GET, SHOW_STATUS_API, urlParams)
+        };
+        http:Response|http:ClientError httpResponse = self.twitterClient->get(requestPath, headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {
@@ -204,11 +200,10 @@ public isolated client class Client {
     # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
     isolated remote function deleteTweet(int id) returns @tainted Status|Error {
         string requestPath = DESTROY_STATUS_API + id.toString() + ".json";
-        string header = check generateAuthorizationHeader(self.twitterCredential, POST, requestPath);
-        http:Request request = new;
-        request.setHeader("Authorization", header);
-
-        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, request);
+        map<string> headers = {
+            "Authorization": check generateAuthorizationHeader(self.twitterCredential, POST, requestPath)
+        };
+        http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, (), headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
             if (jsonPayload is json) {

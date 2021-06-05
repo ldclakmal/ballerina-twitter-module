@@ -37,7 +37,7 @@ function testTweet() {
 function testRetweet() {
     Status|Error result = twitterClient->retweet(tweetId);
     if (result is Status) {
-        test:assertTrue(result.retweeted, "Failed to call retweet.");
+        test:assertTrue(result.retweeted, "Failed to retweet.");
     } else {
         test:assertFail(result.message());
     }
@@ -47,7 +47,7 @@ function testRetweet() {
 function testUnretweet() {
     Status|Error result = twitterClient->unretweet(tweetId);
     if (result is Status) {
-        test:assertEquals(result.id, tweetId, "Failed to call unretweet.");
+        test:assertEquals(result.id, tweetId, "Failed to unretweet.");
     } else {
         test:assertFail(result.message());
     }
@@ -57,7 +57,7 @@ function testUnretweet() {
 function testGetTweet() {
     Status|Error result = twitterClient->getTweet(tweetId);
     if (result is Status) {
-        test:assertEquals(result.id, tweetId, "Failed to call get tweet.");
+        test:assertEquals(result.id, tweetId, "Failed to get a tweet.");
     } else {
         test:assertFail(result.message());
     }
@@ -67,7 +67,7 @@ function testGetTweet() {
 function testDeleteTweet() {
     Status|Error result = twitterClient->deleteTweet(tweetId);
     if (result is Status) {
-        test:assertEquals(result.id, tweetId, "Failed to call delete tweet.");
+        test:assertEquals(result.id, tweetId, "Failed to delete a tweet.");
     } else {
         test:assertFail(result.message());
     }
@@ -78,7 +78,7 @@ function testSearch() {
     string query = "#ballerinalang";
     Status[]|Error result = twitterClient->search(query);
     if (result is Status[]) {
-        test:assertTrue(result.length() > 0, "Failed to call search.");
+        test:assertTrue(result.length() > 0, "Failed to search a query.");
     } else {
         test:assertFail(result.message());
     }
