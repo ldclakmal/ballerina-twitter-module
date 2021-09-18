@@ -1,5 +1,6 @@
 import ballerina/http;
 import ballerina/url;
+import ldclakmal/oauth1;
 
 # The Twitter client configurations.
 #
@@ -16,18 +17,11 @@ public type Configuration record {
     http:ClientConfiguration clientConfig = {};
 };
 
-type Credential record {
-    string accessToken;
-    string accessTokenSecret;
-    string consumerKey;
-    string consumerSecret;
-};
-
 # The Twitter client object.
 public isolated client class Client {
 
     private final http:Client twitterClient;
-    private final Credential & readonly twitterCredential;
+    private final oauth1:ClientOAuthHandler oauthHandler;
 
     public isolated function init(Configuration twitterConfig) returns Error? {
         http:Client|http:ClientError result = new(TWITTER_API_URL, twitterConfig.clientConfig);
@@ -36,12 +30,12 @@ public isolated client class Client {
         } else {
             return prepareError("Failed to init Twitter client.", result);
         }
-        self.twitterCredential = {
-            accessToken: twitterConfig.accessToken,
-            accessTokenSecret: twitterConfig.accessTokenSecret,
+        self.oauthHandler = new({
             consumerKey: twitterConfig.consumerKey,
-            consumerSecret: twitterConfig.consumerSecret
-        };
+            consumerSecret: twitterConfig.consumerSecret,
+            accessToken: twitterConfig.accessToken,
+            accessTokenSecret: twitterConfig.accessTokenSecret
+        });
     }
 
     # Updates the authenticating user's current status, also known as Tweeting.
@@ -53,11 +47,8 @@ public isolated client class Client {
         if (encodedStatus is url:Error) {
             return prepareError("Error occurred while encoding the status.");
         }
-        string urlParams = "status=" + checkpanic encodedStatus;
-        string requestPath = UPDATE_API + "?" + urlParams;
-        map<string> headers = {
-            "Authorization": check generateAuthorizationHeader(self.twitterCredential, POST, UPDATE_API, urlParams)
-        };
+        string requestPath = UPDATE_API + "?" + "status=" + checkpanic encodedStatus;
+        map<string|string[]> headers = check getSecurityHeaders(self.oauthHandler, POST, requestPath);
         http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, (), headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
@@ -82,9 +73,7 @@ public isolated client class Client {
     # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
     isolated remote function retweet(int id) returns @tainted Status|Error {
         string requestPath = RETWEET_API + id.toString() + ".json";
-        map<string> headers = {
-            "Authorization": check generateAuthorizationHeader(self.twitterCredential, POST, requestPath)
-        };
+        map<string|string[]> headers = check getSecurityHeaders(self.oauthHandler, POST, requestPath);
         http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, (), headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
@@ -110,9 +99,7 @@ public isolated client class Client {
     # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
     isolated remote function unretweet(int id) returns @tainted Status|Error {
         string requestPath = UN_RETWEET_API + id.toString() + ".json";
-        map<string> headers = {
-            "Authorization": check generateAuthorizationHeader(self.twitterCredential, POST, requestPath)
-        };
+        map<string|string[]> headers = check getSecurityHeaders(self.oauthHandler, POST, requestPath);
         http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, (), headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
@@ -141,11 +128,8 @@ public isolated client class Client {
         if (encodedQuery is error) {
             return prepareError("Error occurred while encoding the query.");
         }
-        string urlParams = "q=" + checkpanic encodedQuery;
-        string requestPath = SEARCH_API + "?" + urlParams;
-        map<string> headers = {
-            "Authorization": check generateAuthorizationHeader(self.twitterCredential, GET, SEARCH_API, urlParams)
-        };
+        string requestPath = SEARCH_API + "?" + "q=" + checkpanic encodedQuery;
+        map<string|string[]> headers = check getSecurityHeaders(self.oauthHandler, GET, requestPath);
         http:Response|http:ClientError httpResponse = self.twitterClient->get(requestPath, headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
@@ -170,11 +154,8 @@ public isolated client class Client {
     # + id - The numerical ID of the desired status
     # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
     isolated remote function getTweet(int id) returns @tainted Status|Error {
-        string urlParams = "id=" + id.toString();
-        string requestPath = SHOW_STATUS_API + "?" + urlParams;
-        map<string> headers = {
-            "Authorization": check generateAuthorizationHeader(self.twitterCredential, GET, SHOW_STATUS_API, urlParams)
-        };
+        string requestPath = SHOW_STATUS_API + "?" + "id=" + id.toString();
+        map<string|string[]> headers = check getSecurityHeaders(self.oauthHandler, GET, requestPath);
         http:Response|http:ClientError httpResponse = self.twitterClient->get(requestPath, headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
@@ -200,9 +181,7 @@ public isolated client class Client {
     # + return - If success, returns `twitter:Status` object, else returns `twitter:Error`
     isolated remote function deleteTweet(int id) returns @tainted Status|Error {
         string requestPath = DESTROY_STATUS_API + id.toString() + ".json";
-        map<string> headers = {
-            "Authorization": check generateAuthorizationHeader(self.twitterCredential, POST, requestPath)
-        };
+        map<string|string[]> headers = check getSecurityHeaders(self.oauthHandler, POST, requestPath);
         http:Response|http:ClientError httpResponse = self.twitterClient->post(requestPath, (), headers);
         if (httpResponse is http:Response) {
             json|http:ClientError jsonPayload = httpResponse.getJsonPayload();
