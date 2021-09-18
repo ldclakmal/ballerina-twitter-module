@@ -1,6 +1,8 @@
 # Ballerina Twitter Connector
 
-Twitter is what’s happening now. Twitter’s developer platform provides many API products, tools, and resources that enable you to harness the power of Twitter's open, global, and real-time communication network. This module provides capabilities to connects to Twitter from Ballerina.
+`Ballerina Twitter Connector` is a library that is used to connects to Twitter from <a target="_blank" href="https://ballerina.io/">Ballerina</a>.
+
+Twitter is what’s happening now. Twitter’s developer platform provides many API products, tools, and resources that enable you to harness the power of Twitter's open, global, and real-time communication network.
 
 The Ballerina Twitter connector allows you to tweet, retweet, un-retweet, search, retrieve and delete status (AKA Tweets) through the Twitter REST API.
 
