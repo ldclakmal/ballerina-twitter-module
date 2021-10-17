@@ -31,6 +31,7 @@ public isolated client class Client {
             return prepareError("Failed to init Twitter client.", result);
         }
         self.oauthHandler = new({
+            signatureMethod: oauth1:HMAC_SHA1,
             consumerKey: twitterConfig.consumerKey,
             consumerSecret: twitterConfig.consumerSecret,
             accessToken: twitterConfig.accessToken,

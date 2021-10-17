@@ -10,7 +10,7 @@ target/
 *.log
 *.lock
 *.json
-*.toml
+**/Config.toml
 
 # CUSTOM files
 tcp_stream
