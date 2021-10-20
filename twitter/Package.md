@@ -17,7 +17,7 @@ The `ldclakmal/twitter` module contains operations that search for statuses. Sta
 ## Compatibility
 |                    | Version                                                          |
 |:------------------:|:----------------------------------------------------------------:|
-| Ballerina Language | Swan Lake Beta 2 (or later)                                      |
+| Ballerina Language | Swan Lake Beta 3                                                 |
 | Twitter API        | [1.1](https://developer.twitter.com/en/docs/api-reference-index) |
 
 ## Getting Started
