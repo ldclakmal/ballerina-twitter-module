@@ -294,7 +294,7 @@ dependencies = [
 [[package]]
 org = "ldclakmal"
 name = "oauth1"
-version = "1.0.6"
+version = "1.0.8"
 dependencies = [
 	{org = "ballerina", name = "crypto"},
 	{org = "ballerina", name = "regex"},
@@ -309,7 +309,7 @@ modules = [
 [[package]]
 org = "ldclakmal"
 name = "twitter"
-version = "2.0.4"
+version = "2.0.6"
 dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "log"},
